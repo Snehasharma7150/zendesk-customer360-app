@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Customer 360</title>
+    
+    <!-- Google Fonts -->
+    <link
+      href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900"
+      rel="stylesheet"
+    />
+    
+    <!-- Font Awesome Icons -->
+    <link
+      href="https://use.fontawesome.com/releases/v6.4.2/css/all.css"
+      rel="stylesheet"
+    />
+    
+    <!-- Vuetify CSS -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/vuetify@2.4.9/dist/vuetify.min.css"
+      rel="stylesheet"
+    />
+    
+    <!-- Custom CSS -->
+    <link href="css/app.css" rel="stylesheet" />
+  </head>
+  
+  <body>
+    <v-app id="app" v-cloak>
+      <!-- Main Container -->
+      <v-card flat class="app-container pa-1">
+        
+        <!-- ORGANIZATION HEADER SECTION -->
+        <v-card flat class="org-header">
+          <v-list-item class="primary">
+            <v-icon class="mr-2">fa-building-shield</v-icon>
+            <v-list-item-content>
+              <v-list-item-title class="white--text">
+                {{ sharedData.organization.name }}
+              </v-list-item-title>
+              <v-list-item-subtitle class="grey--text text--lighten-2">
+                Account ID: {{ sharedData.organization.accountId }}
+              </v-list-item-subtitle>
+            </v-list-item-content>
+          </v-list-item>
+        </v-card>
+
+        <!-- NAVIGATION TABS -->
+        <v-card class="navigation-bar" color="grey lighten-3" flat>
+          <v-btn
+            v-for="(tab, key) in sharedData.tabs"
+            :key="`tab-${key}`"
+            color="transparent"
+            :class="currentTab === key ? 'primary--text' : 'grey--text text--lighten-1'"
+            depressed
+            @click="currentTab = key"
+          >
+            <v-icon class="mr-1">{{ tab.icon }}</v-icon>
+            <span class="hidden-sm-and-down">{{ tab.name }}</span>
+          </v-btn>
+        </v-card>
+
+        <!-- TAB TITLE -->
+        <v-card class="text-center my-2 pa-2" color="grey lighten-3" flat>
+          <span class="primary--text font-weight-bold">
+            {{ sharedData.tabs[currentTab].name }}
+          </span>
+        </v-card>
+
+        <!-- ========== USER INFO TAB ========== -->
+        <template v-if="currentTab === 'user'">
+          <v-card class="tab-content" flat>
+            <v-card-text>
+              <v-simple-table class="user-info" dense>
+                <template v-slot:default>
+                  <tbody>
+                    <!-- Primary Contact Name -->
+                    <tr v-if="sharedData.requester.name">
+                      <td class="user-info-label">
+                        <strong>Primary Contact Name:</strong>
+                      </td>
+                      <td>{{ sharedData.requester.name }}</td>
+                    </tr>
+
+                    <!-- Email -->
+                    <tr v-if="sharedData.requester.email">
+                      <td class="user-info-label">
+                        <strong>Email:</strong>
+                      </td>
+                      <td>
+                        <a :href="`mailto:${sharedData.requester.email}`">
+                          {{ sharedData.requester.email }}
+                        </a>
+                      </td>
+                    </tr>
+
+                    <!-- Phone -->
+                    <tr v-if="sharedData.requester.phone">
+                      <td class="user-info-label">
+                        <strong>Phone:</strong>
+                      </td>
+                      <td>{{ sharedData.requester.phone }}</td>
+                    </tr>
+
+                    <!-- Custom User Fields -->
+                    <template v-for="(item, key) in sharedData.requester.user_fields">
+                      <tr
+                        v-if="(item || typeof item === 'boolean') && getFieldLabel(key)"
+                        :key="`field-${key}`"
+                      >
+                        <td class="user-info-label">
+                          <strong>{{ getFieldLabel(key) }}:</strong>
+                        </td>
+                        <td>
+                          {{ isDate(item) ? dateToString(item) : item }}
+                        </td>
+                      </tr>
+                    </template>
+
+                    <!-- Notes -->
+                    <tr v-if="sharedData.requester.notes">
+                      <td class="user-info-label">
+                        <strong>Notes:</strong>
+                      </td>
+                      <td>{{ sharedData.requester.notes }}</td>
+                    </tr>
+                  </tbody>
+                </template>
+              </v-simple-table>
+            </v-card-text>
+          </v-card>
+        </template>
+
+        <!-- ========== LOYALTY TAB ========== -->
+        <template v-if="currentTab === 'loyalty'">
+          <v-card class="tab-content" flat>
+            <v-card-text>
+              <!-- Loyalty Stats -->
+              <v-simple-table dense>
+                <template v-slot:default>
+                  <tbody>
+                    <tr v-for="(item, key) in sharedData.loyalty.details" :key="`detail-${key}`">
+                      <td>
+                        <v-icon class="mr-2" color="primary">{{ item.icon }}</v-icon>
+                        <strong>{{ item.title }}:</strong>
+                      </td>
+                      <td>{{ item.value }}</td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <v-icon class="mr-2" color="primary">fa-shopping-cart</v-icon>
+                        <strong>Total Orders:</strong>
+                      </td>
+                      <td>{{ sharedData.orders.length }}</td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <v-icon class="mr-2" color="primary">fa-wallet</v-icon>
+                        <strong>Total Spent (ACV):</strong>
+                      </td>
+                      <td>{{ totalSpent }}</td>
+                    </tr>
+                  </tbody>
+                </template>
+              </v-simple-table>
+
+              <!-- Marketing Campaigns Section -->
+              <h3 class="mt-4 mb-2">
+                <v-icon class="mr-2" color="primary">fa-bullhorn</v-icon>
+                Marketing Campaigns
+              </h3>
+              <v-divider class="mb-3"></v-divider>
+
+              <v-simple-table dense class="campaigns-table">
+                <template v-slot:default>
+                  <thead>
+                    <th>Campaign</th>
+                    <th>Channel</th>
+                    <th class="text-center">Status</th>
+                  </thead>
+                  <tbody>
+                    <template v-for="(item, index) in displayVouchers">
+                      <tr :key="`voucher-${index}`">
+                        <td>
+                          <a
+                            v-if="item.status === 'available'"
+                            href="#"
+                            @click.prevent="selectedVoucher = item"
+                          >
+                            {{ item.code }}
+                          </a>
+                          <span v-else>{{ item.code }}</span>
+                        </td>
+                        <td>{{ item.source }}</td>
+                        <td class="text-center">
+                          <v-chip
+                            :color="getVoucherColor(item.status)"
+                            text-color="white"
+                            small
+                          >
+                            {{ item.status }}
+                          </v-chip>
+                        </td>
+                      </tr>
+                    </template>
+                  </tbody>
+                </template>
+              </v-simple-table>
+
+              <!-- Load More Vouchers -->
+              <div v-if="sharedData.loyalty.vouchers.length > 5" class="text-center mt-3">
+                <v-btn
+                  v-if="!showAllVouchers"
+                  text
+                  color="primary"
+                  small
+                  @click="showAllVouchers = true"
+                >
+                  Load all {{ sharedData.loyalty.vouchers.length }} vouchers
+                </v-btn>
+              </div>
+            </v-card-text>
+          </v-card>
+        </template>
+
+        <!-- ========== ORDERS TAB ========== -->
+        <template v-if="currentTab === 'orders'">
+          <v-card class="tab-content" flat>
+            <v-card-text>
+              <!-- Search Bar -->
+              <v-text-field
+                v-model="searchOrderInput"
+                prepend-inner-icon="fa-search"
+                label="Search by date or order ID..."
+                dense
+                solo
+                flat
+                outlined
+                hide-details
+                autocomplete="off"
+                @keydown.enter="filterOrders()"
+              ></v-text-field>
+
+              <!-- Sort Options -->
+              <div class="my-3">
+                <v-row no-gutters>
+                  <v-col cols="6" class="pr-1">
+                    <v-btn
+                      width="100%"
+                      :color="sortOrderBy === 'date' ? 'grey darken-2' : 'grey'"
+                      outlined
+                      :disabled="!filteredOrders.length"
+                      @click="toggleSort('date')"
+                      small
+                    >
+                      <v-icon small class="mr-2">fa-calendar</v-icon>
+                      Date
+                      <v-icon v-if="sortOrderBy === 'date'" small class="ml-2">
+                        {{ sortOrderOrder === 'desc' ? 'fa-chevron-down' : 'fa-chevron-up' }}
+                      </v-icon>
+                    </v-btn>
+                  </v-col>
+                  <v-col cols="6" class="pl-1">
+                    <v-btn
+                      width="100%"
+                      :color="sortOrderBy === 'id' ? 'grey darken-2' : 'grey'"
+                      outlined
+                      :disabled="!filteredOrders.length"
+                      @click="toggleSort('id')"
+                      small
+                    >
+                      <v-icon small class="mr-2">fa-hashtag</v-icon>
+                      ID
+                      <v-icon v-if="sortOrderBy === 'id'" small class="ml-2">
+                        {{ sortOrderOrder === 'desc' ? 'fa-chevron-down' : 'fa-chevron-up' }}
+                      </v-icon>
+                    </v-btn>
+                  </v-col>
+                </v-row>
+              </div>
+
+              <!-- Orders List -->
+              <v-expansion-panels
+                v-if="filteredOrders.length"
+                v-model="orderTab"
+                class="mt-3"
+                accordion
+                flat
+              >
+                <v-expansion-panel
+                  v-for="(order, oIndex) in filteredOrders"
+                  :key="`order-${oIndex}`"
+                  hide-actions
+                >
+                  <v-expansion-panel-header expand-icon="fa-chevron-down">
+                    <v-card flat class="order-header">
+                      <strong class="text-uppercase">{{ order.id }}</strong>
+                      <v-chip
+                        :color="getStatusColor(order.status)"
+                        text-color="white"
+                        class="ml-2"
+                        label
+                        small
+                      >
+                        {{ order.status }}
+                      </v-chip>
+                      <p class="grey--text text-caption mb-0 mt-1">
+                        {{ dateToString(order.date) }}
+                      </p>
+                    </v-card>
+                  </v-expansion-panel-header>
+
+                  <v-expansion-panel-content>
+                    <v-divider></v-divider>
+                    <v-card-text class="pa-0">
+                      <!-- Order Details -->
+                      <ul class="order-details">
+                        <li>
+                          <strong class="grey--text">Order Total:</strong>
+                          <br />
+                          <span class="font-weight-bold primary--text">
+                            {{ orderTotal(order.id) }}
+                          </span>
+                        </li>
+                        <template v-for="(detail, dIndex) in order.details">
+                          <li v-if="!detail.hidden" :key="`detail-${dIndex}`">
+                            <strong class="grey--text">{{ detail.name }}</strong>
+                            <br />
+                            {{ detail.value }}
+                          </li>
+                        </template>
+                      </ul>
+
+                      <!-- Order Items -->
+                      <v-divider class="my-2"></v-divider>
+                      <h4 class="mb-2">Items</h4>
+                      <v-simple-table dense>
+                        <template v-slot:default>
+                          <thead>
+                            <th>Product</th>
+                            <th>QTY</th>
+                            <th>Price</th>
+                          </thead>
+                          <tbody>
+                            <tr v-for="(item, iIndex) in getOrderItems(order.id)" :key="`item-${iIndex}`">
+                              <td>{{ item.name }}</td>
+                              <td>{{ item.quantity }}</td>
+                              <td>{{ formatMoney(item.price, sharedData.currencySymbol) }}</td>
+                            </tr>
+                          </tbody>
+                        </template>
+                      </v-simple-table>
+
+                      <!-- View Details Button -->
+                      <v-btn
+                        color="primary"
+                        depressed
+                        width="100%"
+                        class="mt-2"
+                        @click="openOrderDetails(order.id)"
+                      >
+                        View Full Details
+                      </v-btn>
+                    </v-card-text>
+                  </v-expansion-panel-content>
+                </v-expansion-panel>
+              </v-expansion-panels>
+
+              <!-- No Results -->
+              <div v-else class="no-results text-center mt-5">
+                <v-icon size="48" class="grey--text">fa-search</v-icon>
+                <p class="mt-2">No orders found.</p>
+                <p class="text-caption grey--text">Try adjusting your search terms.</p>
+              </div>
+            </v-card-text>
+          </v-card>
+        </template>
+
+        <!-- ========== BASKET TAB ========== -->
+        <template v-if="currentTab === 'basket'">
+          <v-card class="tab-content" flat>
+            <v-card-text>
+              <v-simple-table v-if="sharedData.basket.length" dense>
+                <template v-slot:default>
+                  <thead>
+                    <th>Item</th>
+                    <th>Unit Price</th>
+                    <th class="text-center">QTY</th>
+                    <th class="text-right">Total</th>
+                  </thead>
+                  <tbody>
+                    <tr
+                      v-for="(item, index) in sharedData.basket"
+                      :key="`basket-${index}`"
+                    >
+                      <td>{{ itemsInfo[item.id].name }}</td>
+                      <td>
+                        {{ formatMoney(itemsInfo[item.id].price, sharedData.currencySymbol) }}
+                      </td>
+                      <td class="text-center">{{ item.quantity }}</td>
+                      <td class="text-right font-weight-bold">
+                        {{
+                          formatMoney(
+                            itemsInfo[item.id].price * item.quantity,
+                            sharedData.currencySymbol
+                          )
+                        }}
+                      </td>
+                    </tr>
+                  </tbody>
+                </template>
+              </v-simple-table>
+
+              <!-- Empty Basket Message -->
+              <div v-else class="text-center mt-5">
+                <v-icon size="48" class="grey--text">fa-shopping-cart</v-icon>
+                <p class="mt-2">Shopping basket is empty</p>
+              </div>
+
+              <!-- Basket Summary -->
+              <v-card v-if="sharedData.basket.length" class="mt-4 pa-3" color="grey lighten-4">
+                <div class="d-flex justify-space-between align-center">
+                  <span><strong>Subtotal:</strong></span>
+                  <span>{{ basketSubtotal }}</span>
+                </div>
+                <v-divider class="my-2"></v-divider>
+                <div class="d-flex justify-space-between align-center">
+                  <span><strong>Cart Total:</strong></span>
+                  <span class="primary--text font-weight-bold h4">{{ basketTotal }}</span>
+                </div>
+              </v-card>
+
+              <!-- Action Button -->
+              <v-btn
+                v-if="sharedData.basket.length"
+                color="primary"
+                depressed
+                width="100%"
+                class="mt-4"
+                href="https://www.erp-system.example.com/orders"
+                target="_blank"
+              >
+                <v-icon left>fa-external-link-alt</v-icon>
+                View in ERP/OMS System
+              </v-btn>
+            </v-card-text>
+          </v-card>
+        </template>
+
+      </v-card>
+    </v-app>
+
+    <!-- ========== SCRIPTS ========== -->
+    
+    <!-- Zendesk App Framework SDK -->
+    <script src="https://static.zdassets.com/zendesk_app_framework_sdk/2.0/zaf_sdk.min.js"></script>
+    
+    <!-- Vue.js -->
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.12/dist/vue.min.js"></script>
+    
+    <!-- Vuetify -->
+    <script src="https://cdn.jsdelivr.net/npm/vuetify@2.4.9/dist/vuetify.min.js"></script>
+    
+    <!-- Main App Logic -->
+    <script src="js/main.js"></script>
+    <script src="js/app.js"></script>
+  </body>
+</html>
