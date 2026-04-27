@@ -10,7 +10,7 @@
   "location": {
     "support": {
       "ticket_sidebar": {
-        "url": "https://your-domain.com/customer360/assets/iframe.html",
+        "url": "https://github.com/Snehasharma7150/zendesk-customer360-app/blob/main/zendesk-customer-360-complete/zendesk-customer-360/assets/iframe.html",
         "size": {
           "width": "100%",
           "height": "600px"
