@@ -1,16 +1,16 @@
 {
   "name": "Customer 360 - Full View",
   "author": {
-    "name": "Your Company",
-    "email": "support@yourcompany.com",
-    "url": "https://www.yourcompany.com"
+    "name": "Sneha Sharma",
+    "email": "your.email@company.com",
+    "url": "https://www.company.com"
   },
   "defaultLocale": "en",
   "private": true,
   "location": {
     "support": {
       "ticket_sidebar": {
-        "url": "https://github.com/Snehasharma7150/zendesk-customer360-app/blob/main/zendesk-customer-360-complete/zendesk-customer-360/assets/iframe.html",
+        "url": "https://snehasharma7150.github.io/zendesk-customer360-app/zendesk-customer-360/assets/iframe.html",
         "size": {
           "width": "100%",
           "height": "600px"
